@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DENNISMOORLE – errate das Wort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15111f;
+    --ink-2:#1f1a2c;
+    --line:#372f4a;
+    --line-soft:#2a2438;
+    --text:#efe9f5;
+    --muted:#9b90b0;
+    --accent:#f0a64b;
+    --correct:#4f9d62;
+    --present:#d2a431;
+    --absent:#332c44;
+    --key:#3a3350;
+    --display:"Fraunces", Georgia, serif;
+    --sans:"Space Grotesk", system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #241c36 0%, transparent 60%),
+      var(--ink);
+    color:var(--text);
+    font-family:var(--sans);
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;
+    padding:0 14px env(safe-area-inset-bottom,16px);
+    -webkit-tap-highlight-color:transparent;
+  }
+  header{
+    width:100%;max-width:680px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 4px 10px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  h1{
+    font-family:var(--display);
+    font-weight:900;
+    font-size:clamp(28px,8vw,40px);
+    letter-spacing:.04em;
+    margin:0;
+    color:var(--accent);
+  }
+  h1 span{color:var(--text)}
+  .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+  .num{
+    font-family:var(--sans);font-weight:500;
+    font-size:.34em;color:var(--muted);
+    vertical-align:super;margin-left:8px;letter-spacing:.02em;
+  }
+  .actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+  .btn{
+    font-family:var(--sans);font-weight:700;font-size:13px;
+    border-radius:10px;padding:9px 14px;cursor:pointer;border:none;
+    transition:transform .08s ease, filter .15s ease, border-color .15s ease;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn[hidden]{display:none}
+  .newgame{background:transparent;color:var(--text);border:1.5px solid var(--line)}
+  .newgame:hover{border-color:var(--muted)}
+  .share{background:var(--accent);color:var(--ink)}
+  .share:hover{filter:brightness(1.08)}
+
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;width:100%}
+
+  #board{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;width:100%;max-width:660px}
+  .row{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+  .tile{
+    width:100%;aspect-ratio:1;
+    display:flex;align-items:center;justify-content:center;
+    font-size:clamp(18px,4.4vw,30px);font-weight:700;text-transform:uppercase;
+    border:2px solid var(--line);border-radius:8px;
+    background:transparent;color:var(--text);
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .tile.filled{border-color:var(--muted);animation:pop .12s ease}
+  @keyframes pop{0%{transform:scale(.9)}100%{transform:scale(1)}}
+  .tile.flip{animation:flip .55s ease forwards}
+  @keyframes flip{
+    0%{transform:rotateX(0)}
+    50%{transform:rotateX(90deg)}
+    100%{transform:rotateX(0)}
+  }
+  .tile.correct{background:var(--correct);border-color:var(--correct);color:#fff}
+  .tile.present{background:var(--present);border-color:var(--present);color:#fff}
+  .tile.absent{background:var(--absent);border-color:var(--absent);color:var(--muted)}
+  .row.shake{animation:shake .4s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+  #keyboard{display:flex;flex-direction:column;gap:6px;width:100%;max-width:660px}
+  .krow{display:flex;gap:5px;justify-content:center}
+  .key{
+    flex:1;min-width:0;height:52px;
+    border:none;border-radius:7px;cursor:pointer;
+    background:var(--key);color:var(--text);
+    font-family:var(--sans);font-weight:700;font-size:15px;text-transform:uppercase;
+    transition:transform .06s ease, filter .15s ease, background .3s ease;
+  }
+  .key.wide{flex:1.6;font-size:12px;letter-spacing:.04em}
+  .key:active{transform:translateY(1px)}
+  .key.correct{background:var(--correct);color:#fff}
+  .key.present{background:var(--present);color:#fff}
+  .key.absent{background:#211c2e;color:#5a5170}
+
+  #toast{
+    position:fixed;top:18px;left:50%;transform:translateX(-50%);
+    background:var(--text);color:var(--ink);
+    font-weight:700;font-size:14px;
+    padding:11px 18px;border-radius:10px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+    box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:5;
+  }
+  #toast.show{opacity:1}
+
+  @media (max-width:420px){
+    .key{height:48px;font-size:14px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>DENNIS<span>MOORLE</span><span class="num" id="num"></span></h1>
+    </div>
+    <div class="actions">
+      <button class="btn share" id="share" hidden>SHARE</button>
+      <button class="btn newgame" id="newgame">NEW GAME</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="board" aria-label="Spielfeld"></div>
+    <div id="keyboard"></div>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ---- Festes Lösungswort ----
+const ANSWER = "DENNISMOOR";
+const START = new Date(2026, 5, 11); // 11.06.2026 = #1
+const EMOJI = {correct:"🟩", present:"🟪", absent:"⬛"};
+
+const ROWS = 6, COLS = 10;
+let answer, row, col, board, gameOver, history;
+
+function puzzleNumber(){
+  const n = new Date();
+  const today = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  return Math.floor((today - START) / 86400000) + 1;
+}
+
+const boardEl = document.getElementById("board");
+const kbEl = document.getElementById("keyboard");
+const toastEl = document.getElementById("toast");
+const keyEls = {};
+
+const KB = [
+  ["Q","W","E","R","T","Z","U","I","O","P","Ü"],
+  ["A","S","D","F","G","H","J","K","L","Ö","Ä"],
+  ["ENTER","Y","X","C","V","B","N","M","DEL"]
+];
+
+function buildBoard(){
+  boardEl.innerHTML = "";
+  for(let r=0;r<ROWS;r++){
+    const rowEl = document.createElement("div");
+    rowEl.className = "row";
+    rowEl.dataset.row = r;
+    for(let c=0;c<COLS;c++){
+      const t = document.createElement("div");
+      t.className = "tile";
+      rowEl.appendChild(t);
+    }
+    boardEl.appendChild(rowEl);
+  }
+}
+
+function buildKeyboard(){
+  kbEl.innerHTML = "";
+  KB.forEach(line=>{
+    const rowEl = document.createElement("div");
+    rowEl.className = "krow";
+    line.forEach(k=>{
+      const b = document.createElement("button");
+      b.className = "key" + (k.length>1 ? " wide" : "");
+      b.textContent = k === "DEL" ? "⌫" : k;
+      b.addEventListener("click", ()=>handleKey(k));
+      keyEls[k] = b;
+      rowEl.appendChild(b);
+    });
+    kbEl.appendChild(rowEl);
+  });
+}
+
+function newGame(){
+  answer = ANSWER;
+  row = 0; col = 0; gameOver = false;
+  history = [];
+  document.getElementById("num").textContent = "#" + puzzleNumber();
+  document.getElementById("share").hidden = true;
+  board = Array.from({length:ROWS},()=>Array(COLS).fill(""));
+  buildBoard();
+  buildKeyboard();
+}
+
+function getTile(r,c){ return boardEl.children[r].children[c]; }
+
+function toast(msg, ms=1400){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toastEl.classList.remove("show"), ms);
+}
+
+function handleKey(k){
+  if(gameOver) return;
+  if(k === "ENTER"){ submit(); return; }
+  if(k === "DEL"){ remove(); return; }
+  if(k.length === 1 && col < COLS){
+    board[row][col] = k;
+    const t = getTile(row,col);
+    t.textContent = k;
+    t.classList.add("filled");
+    col++;
+  }
+}
+
+function remove(){
+  if(col > 0){
+    col--;
+    board[row][col] = "";
+    const t = getTile(row,col);
+    t.textContent = "";
+    t.classList.remove("filled");
+  }
+}
+
+function submit(){
+  if(col < COLS){
+    boardEl.children[row].classList.add("shake");
+    setTimeout(()=>boardEl.children[row].classList.remove("shake"),400);
+    toast("Nicht genug Buchstaben");
+    return;
+  }
+  const guess = board[row].join("");
+  const result = score(guess, answer);
+  history.push(result);
+
+  // Kacheln nacheinander umdrehen
+  for(let c=0;c<COLS;c++){
+    const t = getTile(row,c);
+    setTimeout(()=>{
+      t.classList.add("flip");
+      setTimeout(()=>{
+        t.classList.add(result[c]);
+        markKey(guess[c], result[c]);
+      },275);
+    }, c*220);
+  }
+
+  const finished = row;
+  setTimeout(()=>{
+    if(guess === answer){
+      gameOver = true;
+      document.getElementById("share").hidden = false;
+      toast(["Glückstreffer!","Stark!","Sauber!","Gut gemacht!","Geschafft!","Puh, gerade noch!"][finished], 2600);
+    } else if(row === ROWS-1){
+      gameOver = true;
+      toast("Das Wort war: " + answer, 4000);
+    } else {
+      row++; col = 0;
+    }
+  }, COLS*220 + 300);
+}
+
+// Wordle-Wertung mit korrekter Behandlung doppelter Buchstaben
+function score(guess, target){
+  const res = Array(COLS).fill("absent");
+  const counts = {};
+  for(const ch of target) counts[ch] = (counts[ch]||0)+1;
+  for(let i=0;i<COLS;i++){
+    if(guess[i] === target[i]){ res[i] = "correct"; counts[guess[i]]--; }
+  }
+  for(let i=0;i<COLS;i++){
+    if(res[i] === "correct") continue;
+    if(counts[guess[i]] > 0){ res[i] = "present"; counts[guess[i]]--; }
+  }
+  return res;
+}
+
+// Tastatur-Farbe nur "hochstufen" (correct > present > absent)
+function markKey(ch, state){
+  const el = keyEls[ch];
+  if(!el) return;
+  const rank = {absent:0, present:1, correct:2};
+  const cur = el.classList.contains("correct") ? "correct"
+            : el.classList.contains("present") ? "present"
+            : el.classList.contains("absent") ? "absent" : null;
+  if(cur === null || rank[state] > rank[cur]){
+    el.classList.remove("absent","present","correct");
+    el.classList.add(state);
+  }
+}
+
+// Physische Tastatur
+document.addEventListener("keydown", e=>{
+  if(e.key === "Enter") handleKey("ENTER");
+  else if(e.key === "Backspace") handleKey("DEL");
+  else {
+    const k = e.key.toUpperCase();
+    if(/^[A-ZÄÖÜ]$/.test(k)) handleKey(k);
+  }
+});
+
+document.getElementById("newgame").addEventListener("click", newGame);
+
+function shareText(){
+  const grid = history.map(r => r.map(s => EMOJI[s]).join("")).join("\n");
+  return "DENNISMOORLE #" + puzzleNumber() + "\n" + grid;
+}
+
+document.getElementById("share").addEventListener("click", async ()=>{
+  const text = shareText();
+  try{
+    if(navigator.share){
+      await navigator.share({text});
+      return;
+    }
+  }catch(e){ /* abgebrochen -> auf Kopieren zurückfallen */ }
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("In die Zwischenablage kopiert");
+  }catch(e){
+    toast("Kopieren nicht möglich");
+  }
+});
+
+newGame();
+</script>
+</body>
+</html>
